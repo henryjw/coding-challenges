@@ -15,14 +15,24 @@ type Record struct {
 	EncryptedPassword string
 }
 
-func CreateRecord(vaultId uint, recordName string, username string, password string) error {
+type RecordManager struct {
+	db *gorm.DB
+}
+
+func NewRecordManager(database *gorm.DB) *RecordManager {
+	return &RecordManager{
+		db: database,
+	}
+}
+
+func (receiver *RecordManager) CreateRecord(vaultId uint, recordName string, username string, password string) error {
 	session := utils.GetSession()
 
 	if session == nil {
 		panic("Session should not be nil")
 	}
 
-	if recordExists(vaultId, recordName) {
+	if receiver.recordExists(vaultId, recordName) {
 		return errors.New(fmt.Sprintf("A record with the name '%v' already exists\n", recordName))
 	}
 
@@ -38,10 +48,9 @@ func CreateRecord(vaultId uint, recordName string, username string, password str
 		UserName:          username,
 		EncryptedPassword: encryptedPassword,
 	}
-	db := GetDatabase()
 
 	// TODO: execute this in a GoRoutine
-	result := db.Create(&record)
+	result := receiver.db.Create(&record)
 
 	if result.Error != nil {
 		return result.Error
@@ -50,7 +59,7 @@ func CreateRecord(vaultId uint, recordName string, username string, password str
 	return nil
 }
 
-func GetRecord(vaultId uint, recordName string) *Record {
+func (receiver *RecordManager) GetRecord(vaultId uint, recordName string) *Record {
 	session := utils.GetSession()
 
 	if session == nil {
@@ -59,9 +68,7 @@ func GetRecord(vaultId uint, recordName string) *Record {
 
 	var record Record
 
-	db := GetDatabase()
-
-	db.Where(&Record{VaultId: vaultId, Name: recordName}).First(&record)
+	receiver.db.Where(&Record{VaultId: vaultId, Name: recordName}).First(&record)
 
 	if record.ID == 0 {
 		return nil
@@ -70,12 +77,10 @@ func GetRecord(vaultId uint, recordName string) *Record {
 	return &record
 }
 
-func recordExists(vaultId uint, recordName string) bool {
+func (receiver *RecordManager) recordExists(vaultId uint, recordName string) bool {
 	var record Record
 
-	db := GetDatabase()
-
-	db.Where(&Record{VaultId: vaultId, Name: recordName}).First(&record)
+	receiver.db.Where(&Record{VaultId: vaultId, Name: recordName}).First(&record)
 
 	return record.ID > 0
 }

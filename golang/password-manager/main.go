@@ -7,15 +7,18 @@ import (
 )
 
 func main() {
-	dbErr := data.InitDatabase()
+	db, dbErr := data.InitDatabase()
 
 	if dbErr != nil {
 		panic(fmt.Sprintf("Error initializing database: %v\n", dbErr))
 	}
 
-	vault := data.GetVault("test", "password123")
+	vaultManager := data.NewVaultManager(db)
+	recordManager := data.NewRecordManager(db)
 
-	createVaultErr := data.CreateVault("test", "password123")
+	vault := vaultManager.GetVault("test", "password123")
+
+	createVaultErr := vaultManager.CreateVault("test", "password123")
 
 	if createVaultErr != nil {
 		fmt.Printf("Error creating vault: %v\n", createVaultErr)
@@ -32,13 +35,13 @@ func main() {
 	println("Vault password hash", session.VaultPasswordHash)
 
 	recordName := "GoogleDrive"
-	createRecordError := data.CreateRecord(vault.ID, recordName, "henry", "secure_password123")
+	createRecordError := recordManager.CreateRecord(vault.ID, recordName, "henry", "secure_password123")
 
 	if createRecordError != nil {
 		fmt.Printf("Error creating record: %v\n", createRecordError)
 	}
 
-	record := data.GetRecord(vault.ID, recordName)
+	record := recordManager.GetRecord(vault.ID, recordName)
 
 	if record == nil {
 		fmt.Printf("No record named '%v' found\n", recordName)
