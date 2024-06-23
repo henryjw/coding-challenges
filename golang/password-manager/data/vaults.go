@@ -31,8 +31,7 @@ func GetVault(name string, password string) *Vault {
 	passwordHash := utils.Hash(password, name)
 	var vault Vault
 
-	db.Where("name = ? AND password_hash = ?", name, passwordHash).First(&vault)
-
+	db.Where(&Vault{Name: name, PasswordHash: passwordHash}).First(&vault)
 	if vault.ID == 0 {
 		return nil
 	}
