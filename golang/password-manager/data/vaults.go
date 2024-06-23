@@ -25,3 +25,17 @@ func CreateVault(name string, password string) error {
 
 	return nil
 }
+
+func GetVault(name string, password string) *Vault {
+	db := GetDatabase()
+	passwordHash := utils.Hash(password, name)
+	var vault Vault
+
+	db.Where("name = ? AND password_hash = ?", name, passwordHash).First(&vault)
+
+	if vault.ID == 0 {
+		return nil
+	}
+
+	return &vault
+}

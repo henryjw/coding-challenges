@@ -12,5 +12,12 @@ func main() {
 		panic(fmt.Sprintf("Error initializing database: %v\n", dbErr))
 	}
 
-	data.CreateVault("test", "password123")
+	vault := data.GetVault("test", "password123")
+
+	if vault == nil {
+		println("Vault not found")
+		//data.CreateVault("test", "password123")
+	} else {
+		println("Vault found")
+	}
 }

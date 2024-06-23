@@ -23,6 +23,13 @@ func InitDatabase() error {
 		return err
 	}
 
+	migrateError := db.AutoMigrate(&Vault{}, &Record{})
+
+	if migrateError != nil {
+		logger.Printf("Error running auto-migration: %v\n", migrateError)
+		return migrateError
+	}
+
 	logger.Println("Database initialized")
 
 	return nil
