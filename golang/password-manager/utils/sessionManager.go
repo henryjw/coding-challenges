@@ -23,9 +23,11 @@ func ResetSession() {
 	session = nil
 }
 
-func CreateSession(vaultId uint, vaultPasswordHash string) {
+func CreateSession(vaultId uint, vaultPasswordHash string) Session {
 	session = &Session{
 		VaultId:           vaultId,
 		VaultPasswordHash: vaultPasswordHash,
 	}
+
+	return *session
 }

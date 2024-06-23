@@ -16,6 +16,9 @@ type Vault struct {
 func CreateVault(name string, password string) error {
 	passwordHash := utils.Hash(password, name)
 	vault := Vault{Name: name, PasswordHash: passwordHash}
+
+	// TODO: consider creating a struct to maintain common state (like the database pointer and the session) so it can be injected
+	// instead of having to retrieve it in every method
 	db := GetDatabase()
 
 	if vaultExists(name) {
