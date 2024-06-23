@@ -14,9 +14,14 @@ func main() {
 
 	vault := data.GetVault("test", "password123")
 
+	createVaultErr := data.CreateVault("test", "password123")
+
+	if createVaultErr != nil {
+		fmt.Printf("Error creating vault: %v\n", createVaultErr)
+	}
+
 	if vault == nil {
 		println("Vault not found")
-		//data.CreateVault("test", "password123")
 	} else {
 		println("Vault found")
 	}

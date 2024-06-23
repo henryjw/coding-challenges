@@ -1,6 +1,8 @@
 package data
 
 import (
+	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"password-manager/utils"
 )
@@ -15,6 +17,10 @@ func CreateVault(name string, password string) error {
 	passwordHash := utils.Hash(password, name)
 	vault := Vault{Name: name, PasswordHash: passwordHash}
 	db := GetDatabase()
+
+	if vaultExists(name) {
+		return errors.New(fmt.Sprintf("A vault with the name '%s' already exists", name))
+	}
 
 	// TODO: execute this in a GoRoutine
 	result := db.Create(&vault)
@@ -37,4 +43,14 @@ func GetVault(name string, password string) *Vault {
 	}
 
 	return &vault
+}
+
+func vaultExists(name string) bool {
+	db := GetDatabase()
+
+	var vault Vault
+
+	db.Where(&Vault{Name: name}).First(&vault)
+
+	return vault.ID > 0
 }
