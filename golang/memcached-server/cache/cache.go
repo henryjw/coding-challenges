@@ -5,11 +5,12 @@ import (
 	"math"
 )
 
-type KeyValue struct {
+type keyValue struct {
 	Key   string
 	Value string
 }
 
+// Cache simple in-memory cache
 type Cache struct {
 	// Least frequently used elements are in the fronts
 	accessList  *list.List
@@ -50,19 +51,19 @@ func (receiver *Cache) Set(key string, value string) error {
 
 	if receiver.Size() == receiver.Capacity {
 		leastRecentlyUsedElement := receiver.accessList.Front()
-		prevKey := leastRecentlyUsedElement.Value.(*KeyValue).Key
+		prevKey := leastRecentlyUsedElement.Value.(*keyValue).Key
 
 		delete(receiver.lookupTable, prevKey)
 
-		leastRecentlyUsedElement.Value.(*KeyValue).Key = key
-		leastRecentlyUsedElement.Value.(*KeyValue).Value = value
+		leastRecentlyUsedElement.Value.(*keyValue).Key = key
+		leastRecentlyUsedElement.Value.(*keyValue).Value = value
 		receiver.accessList.MoveToBack(leastRecentlyUsedElement)
 
 		receiver.lookupTable[key] = leastRecentlyUsedElement
 		return nil
 	}
 
-	element := receiver.accessList.PushBack(&KeyValue{Key: key, Value: value})
+	element := receiver.accessList.PushBack(&keyValue{Key: key, Value: value})
 	receiver.lookupTable[key] = element
 
 	return nil
@@ -79,7 +80,7 @@ func (receiver *Cache) Get(key string) (string, error) {
 	}
 
 	element := receiver.lookupTable[key]
-	value := element.Value.(*KeyValue).Value
+	value := element.Value.(*keyValue).Value
 
 	receiver.accessList.MoveToBack(element)
 
