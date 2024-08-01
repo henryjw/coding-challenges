@@ -13,5 +13,5 @@ func (e *KeyNotFoundError) Error() string {
 type EmptyKeyError struct{}
 
 func (e *EmptyKeyError) Error() string {
-	return "Key must have a length greater than 0"
+	return "key must have a length greater than 0"
 }

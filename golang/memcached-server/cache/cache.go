@@ -43,7 +43,7 @@ func (receiver *Cache) Set(key string, value string) error {
 	}
 
 	if element, exists := receiver.lookupTable[key]; exists {
-		element.Value = value
+		element.Value.(*keyValue).Value = value
 		receiver.accessList.MoveToBack(element)
 
 		return nil

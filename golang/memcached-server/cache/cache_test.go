@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+// TODO: figure out how to generate exhaustive test cases to have higher confidence that this works as expected
+
 func TestGetEmptyCache(t *testing.T) {
 	cache := New(1)
 
@@ -61,6 +63,18 @@ func TestSet(t *testing.T) {
 	}
 }
 
+func TestSetOverrideExistingValue(t *testing.T) {
+	cache := New(10)
+	cache.Set("test", "val")
+	cache.Set("test", "val2")
+
+	val, _ := cache.Get("test")
+
+	if val != "val2" {
+		t.Errorf("Unexpected value. Expected '%s', got '%s'\n", "val2", val)
+	}
+}
+
 func TestSetAndGet(t *testing.T) {
 	cache := New(10)
 	cache.Set("test", "val")
@@ -88,6 +102,22 @@ func TestBasicDelete(t *testing.T) {
 	if cache.Size() != 0 {
 		t.Fatalf("Incorrect cache size. Expected: %d, got: %d\n", 0, cache.Size())
 	}
+}
+
+func TestDeleteNoMatch(t *testing.T) {
+	cache := New(10)
+	cache.Set("key", "val")
+
+	deleteErr := cache.Delete("key1")
+
+	if deleteErr != nil {
+		t.Fatal(deleteErr)
+	}
+
+	if cache.Size() != 1 {
+		t.Fatalf("Incorrect cache size. Expected: %d, got: %d\n", 1, cache.Size())
+	}
+
 }
 
 func TestCapacity(t *testing.T) {
