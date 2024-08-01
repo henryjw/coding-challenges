@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"math"
 	"reflect"
 	"testing"
 )
@@ -89,6 +90,31 @@ func TestBasicDelete(t *testing.T) {
 	}
 }
 
+func TestCapacity(t *testing.T) {
+	cache := New(10)
+
+	if cache.Capacity != 10 {
+		t.Fatalf("Expected capacity to be %d, got capacity = %d\n", 10, cache.Capacity)
+	}
+}
+
+func TestUnboundedCapacity(t *testing.T) {
+	cache := New(0)
+	if cache.Capacity != math.MaxInt {
+		t.Fatalf("Expected cache capacity to be unbounded (%d), got capacity = %d\n", math.MaxInt, cache.Capacity)
+	}
+
+	cache = New(-1)
+	if cache.Capacity != math.MaxInt {
+		t.Fatalf("Expected cache capacity to be unbounded (%d), got capacity = %d\n", math.MaxInt, cache.Capacity)
+	}
+
+	cache = New(-1300304)
+	if cache.Capacity != math.MaxInt {
+		t.Fatalf("Expected cache capacity to be unbounded (%d), got capacity = %d\n", math.MaxInt, cache.Capacity)
+	}
+}
+
 func TestEviction(t *testing.T) {
 	cache := New(2)
 	cache.Set("key1", "val1")
@@ -122,5 +148,4 @@ func TestEviction(t *testing.T) {
 	if val4 != "val4" {
 		t.Errorf("Unexpected value. Expected '%s', got '%s'\n", "val4", val4)
 	}
-
 }

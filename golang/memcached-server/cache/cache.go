@@ -2,6 +2,7 @@ package cache
 
 import (
 	"container/list"
+	"math"
 )
 
 type KeyValue struct {
@@ -16,7 +17,12 @@ type Cache struct {
 	Capacity    int
 }
 
+// New Creates new Cache instance with a given capacity. Capacity will be unbounded if `capacity <= 0`
 func New(capacity int) *Cache {
+	if capacity <= 0 {
+		capacity = math.MaxInt
+	}
+
 	return &Cache{
 		accessList:  list.New(),
 		lookupTable: make(map[string]*list.Element),
@@ -24,10 +30,12 @@ func New(capacity int) *Cache {
 	}
 }
 
+// Size Returns the number of keys currently in the cache
 func (receiver *Cache) Size() int {
 	return len(receiver.lookupTable)
 }
 
+// Set stores key with given value in the cache. Returns error if key is invalid (e.g., empty string)
 func (receiver *Cache) Set(key string, value string) error {
 	if len(key) < 1 {
 		return &EmptyKeyError{}
@@ -60,6 +68,7 @@ func (receiver *Cache) Set(key string, value string) error {
 	return nil
 }
 
+// Get retrieves value from the cache by key. Returns error if key is not found or if the key is invalid (e.g., empty string)
 func (receiver *Cache) Get(key string) (string, error) {
 	if len(key) < 1 {
 		return "", &EmptyKeyError{}
@@ -78,6 +87,7 @@ func (receiver *Cache) Get(key string) (string, error) {
 
 }
 
+// Delete key if it exists. Currently there are no errors for this function
 func (receiver *Cache) Delete(key string) error {
 	if _, exists := receiver.lookupTable[key]; !exists {
 		return nil
