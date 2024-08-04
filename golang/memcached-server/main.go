@@ -2,9 +2,12 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/urfave/cli/v2"
+	"io"
 	"log"
+	"memcached-server/utils"
 	"net"
 	"os"
 	"strings"
@@ -81,27 +84,53 @@ func handleConnection(conn net.Conn) {
 	}()
 
 	reader := bufio.NewReader(conn)
-	writer := bufio.NewWriter(conn)
-	//buffer := make([]byte, 0)
 
 	for {
 		message, readErr := reader.ReadString('\n')
 		message = strings.TrimSpace(message)
 
 		if readErr != nil {
-			fmt.Println("Error reading from connection: ", readErr)
+			log.Println("Error reading from connection: ", readErr)
 			continue
 		}
 
-		fmt.Printf("Message received: '%s'\n", message)
+		log.Printf("Message received: '%s'\n", message)
 
-		// TODO: implement actual functionality. This just echoes the message back to the client
-		_, writeErr := writer.WriteString(fmt.Sprintf("Echo: %v\n", message))
+		command, parseCommandErr := utils.ParseCommand(message)
+
+		if parseCommandErr != nil {
+			sendMessage(fmt.Sprint("Unexpected error parsing the command: ", parseCommandErr), conn)
+			continue
+		}
+
+		result, processCommandErr := processCommand(*command)
+
+		if processCommandErr != nil {
+			sendMessage(fmt.Sprint("Error processing command: ", processCommandErr), conn)
+			continue
+		}
+
+		_, writeErr := conn.Write([]byte(fmt.Sprintf("Echo: %v\n", result)))
 		if writeErr != nil {
-			fmt.Println("Error sending message: ", writeErr)
+			log.Println("Error sending message: ", writeErr)
 			continue
 		}
-
-		writer.Flush()
 	}
+}
+
+func processCommand(command utils.Command) (string, error) {
+	return "", errors.New("not yet implemented")
+}
+
+func sendMessage(message string, writer io.Writer) error {
+	log.Printf("Sending mesessage: '%s'\n", message)
+	_, err := writer.Write([]byte(message))
+
+	if err != nil {
+		log.Println("Error sending message: ", err)
+	} else {
+		log.Println("Successfully sent message")
+	}
+
+	return err
 }
