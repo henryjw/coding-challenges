@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/urfave/cli/v2"
 	"log"
+	"memcached-server/cache"
+	"memcached-server/server"
 	"os"
 )
 
@@ -13,11 +15,12 @@ func main() {
 			&cli.IntFlag{
 				Name:  "p",
 				Value: 9999,
-				Usage: "Port number to run the server",
+				Usage: "Port number to Run the server",
 			},
 		},
 		Action: func(context *cli.Context) error {
-			return run(context.Int("p"))
+
+			return server.New(cache.New(-1)).Run(context.Int("p"))
 		},
 	}
 
