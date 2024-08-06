@@ -115,11 +115,11 @@ func (receiver *Server) handleConnection(conn net.Conn) {
 		result, processCommandErr := receiver.processCommand(*command, data)
 
 		if processCommandErr != nil {
-			sendMessage(fmt.Sprint("Error processing command: ", processCommandErr), conn)
+			sendMessage(fmt.Sprint("Error processing command: ", processCommandErr, "\r\n"), conn)
 			continue
 		}
 
-		_, writeErr := conn.Write([]byte(result))
+		_, writeErr := conn.Write([]byte(result + "\r\n"))
 		if writeErr != nil {
 			log.Println("Error sending message: ", writeErr)
 			continue
