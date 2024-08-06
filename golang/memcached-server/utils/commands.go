@@ -28,6 +28,10 @@ type Command struct {
 }
 
 func ParseCommand(rawCommand string) (*Command, error) {
+	if strings.HasPrefix(rawCommand, "get") {
+		return parseGetCommand(rawCommand)
+	}
+
 	re := regexp.MustCompile(
 		fmt.Sprintf(
 			// Handling the possibility of multiple spaces. Although, multiple spaces probably aren't allowed by the
@@ -83,6 +87,20 @@ func ParseCommand(rawCommand string) (*Command, error) {
 	}
 
 	return command, nil
+}
+
+func parseGetCommand(rawCommand string) (*Command, error) {
+	split := strings.Split(rawCommand, " ")
+
+	if len(split) != 2 {
+		return nil, fmt.Errorf("unexpected command structure for: '%s'", rawCommand)
+	}
+
+	return &Command{
+		Name:  split[0],
+		Key:   split[1],
+		Flags: uint16(0),
+	}, nil
 }
 
 // buildNamedCaptureGroupRegexp wraps expression as a named capture group. E.g., "[a-z]+", "firstName" -> "(?P<firstName>[a-z]+)"

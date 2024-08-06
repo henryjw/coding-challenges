@@ -26,6 +26,26 @@ func TestParseCommand(t *testing.T) {
 	assertSame(*expected, *command, t)
 }
 
+func TestParseCommandGet(t *testing.T) {
+	rawCommand := "get test"
+	command, err := ParseCommand(rawCommand)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := &Command{
+		Name:      "get",
+		Key:       "test",
+		Flags:     0,
+		ExpiresIn: 0,
+		ByteCount: 0,
+		Noreply:   false,
+	}
+
+	assertSame(*expected, *command, t)
+}
+
 func TestParseCommandNoreplyNotSet(t *testing.T) {
 	rawCommand := "set test 0 100 4"
 	command, err := ParseCommand(rawCommand)
