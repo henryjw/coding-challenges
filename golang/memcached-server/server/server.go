@@ -82,7 +82,12 @@ func (receiver *Server) handleConnection(conn net.Conn) {
 		message = strings.TrimSpace(message)
 
 		if readErr != nil {
-			log.Println("Error reading from connection: ", readErr)
+
+			if errors.Is(readErr, io.EOF) {
+				break
+			} else {
+				log.Println("Error reading from connection: ", readErr)
+			}
 			continue
 		}
 
