@@ -146,7 +146,11 @@ func (receiver *Server) processCommand(command utils.Command, data string) (stri
 
 func (receiver *Server) processSet(command utils.Command, data string) (string, error) {
 	// TODO: set key expiration once supported by the cache
-	err := receiver.cache.Set(command.Key, data)
+	err := receiver.cache.Set(command.Key, cache.Data{
+		Flags:     command.Flags,
+		ByteCount: command.ByteCount,
+		Value:     data,
+	})
 	if err != nil {
 		return "", err
 	}

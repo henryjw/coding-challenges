@@ -7,7 +7,13 @@ import (
 
 type keyValue struct {
 	Key   string
-	Value string
+	Value Data
+}
+
+type Data struct {
+	Value     string
+	Flags     uint16
+	ByteCount int
 }
 
 // Cache simple in-memory cache
@@ -37,13 +43,13 @@ func (receiver *Cache) Size() int {
 }
 
 // Set stores key with given value in the cache. Returns error if key is invalid (e.g., empty string)
-func (receiver *Cache) Set(key string, value string) error {
+func (receiver *Cache) Set(key string, data Data) error {
 	if len(key) < 1 {
 		return &EmptyKeyError{}
 	}
 
 	if element, exists := receiver.lookupTable[key]; exists {
-		element.Value.(*keyValue).Value = value
+		element.Value.(*keyValue).Value = data
 		receiver.accessList.MoveToBack(element)
 
 		return nil
@@ -56,27 +62,27 @@ func (receiver *Cache) Set(key string, value string) error {
 		delete(receiver.lookupTable, prevKey)
 
 		leastRecentlyUsedElement.Value.(*keyValue).Key = key
-		leastRecentlyUsedElement.Value.(*keyValue).Value = value
+		leastRecentlyUsedElement.Value.(*keyValue).Value = data
 		receiver.accessList.MoveToBack(leastRecentlyUsedElement)
 
 		receiver.lookupTable[key] = leastRecentlyUsedElement
 		return nil
 	}
 
-	element := receiver.accessList.PushBack(&keyValue{Key: key, Value: value})
+	element := receiver.accessList.PushBack(&keyValue{Key: key, Value: data})
 	receiver.lookupTable[key] = element
 
 	return nil
 }
 
 // Get retrieves value from the cache by key. Returns error if key is not found or if the key is invalid (e.g., empty string)
-func (receiver *Cache) Get(key string) (string, error) {
+func (receiver *Cache) Get(key string) (Data, error) {
 	if len(key) < 1 {
-		return "", &EmptyKeyError{}
+		return Data{}, &EmptyKeyError{}
 	}
 
 	if _, exists := receiver.lookupTable[key]; !exists {
-		return "", &KeyNotFoundError{}
+		return Data{}, &KeyNotFoundError{}
 	}
 
 	element := receiver.lookupTable[key]

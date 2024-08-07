@@ -42,7 +42,11 @@ func TestGetEmptyKey(t *testing.T) {
 func TestSetEmptyKey(t *testing.T) {
 	cache := New(1)
 
-	err := cache.Set("", "v")
+	err := cache.Set("", Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+	})
 
 	if err == nil {
 		t.Fatal("Expected error")
@@ -56,7 +60,11 @@ func TestSetEmptyKey(t *testing.T) {
 
 func TestSet(t *testing.T) {
 	cache := New(10)
-	cache.Set("test", "val")
+	cache.Set("test", Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+	})
 
 	if cache.Size() != 1 {
 		t.Fatalf("Incorrect cache size. Expected: %d, got: %d'\n", 1, cache.Size())
@@ -64,34 +72,55 @@ func TestSet(t *testing.T) {
 }
 
 func TestSetOverrideExistingValue(t *testing.T) {
+	data1 := Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+	}
+
+	data2 := Data{
+		Flags:     uint16(13),
+		Value:     "hi",
+		ByteCount: 2,
+	}
+
 	cache := New(10)
-	cache.Set("test", "val")
-	cache.Set("test", "val2")
+	cache.Set("test", data1)
+	cache.Set("test", data2)
 
 	val, _ := cache.Get("test")
 
-	if val != "val2" {
-		t.Errorf("Unexpected value. Expected '%s', got '%s'\n", "val2", val)
+	if !reflect.DeepEqual(val, data2) {
+		t.Errorf("Unexpected value. Expected '%v', got '%v'\n", data2, val)
 	}
 }
 
 func TestSetAndGet(t *testing.T) {
+	data := Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+	}
 	cache := New(10)
-	cache.Set("test", "val")
+	cache.Set("test", data)
 	value, err := cache.Get("test")
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if value != "val" {
+	if !reflect.DeepEqual(value, data) {
 		t.Fatalf("Incorrect value. Expected '%s', got '%s'\n", "test", "val")
 	}
 }
 
 func TestBasicDelete(t *testing.T) {
 	cache := New(10)
-	cache.Set("test", "val")
+	cache.Set("test", Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+	})
 
 	err := cache.Delete("test")
 
@@ -106,7 +135,11 @@ func TestBasicDelete(t *testing.T) {
 
 func TestDeleteNoMatch(t *testing.T) {
 	cache := New(10)
-	cache.Set("key", "val")
+	cache.Set("key", Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+	})
 
 	deleteErr := cache.Delete("key1")
 
@@ -146,11 +179,32 @@ func TestUnboundedCapacity(t *testing.T) {
 }
 
 func TestEviction(t *testing.T) {
+	data1 := Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+	}
+	data2 := Data{
+		Flags:     uint16(13),
+		Value:     "hi",
+		ByteCount: 2,
+	}
+	data3 := Data{
+		Flags:     uint16(9),
+		Value:     "hey",
+		ByteCount: 3,
+	}
+	data4 := Data{
+		Flags:     uint16(999),
+		Value:     "yes",
+		ByteCount: 3,
+	}
+
 	cache := New(2)
-	cache.Set("key1", "val1")
-	cache.Set("key2", "val2")
-	cache.Set("key3", "val3") // key1 should be evicted after this operation
-	cache.Set("key4", "val4")
+	cache.Set("key1", data1)
+	cache.Set("key2", data2)
+	cache.Set("key3", data3) // key1 should be evicted after this operation
+	cache.Set("key4", data4)
 
 	if cache.Size() != 2 {
 		t.Fatalf("Incorrect cache size. Expected: %d, got: %d\n", 2, cache.Size())
@@ -171,11 +225,11 @@ func TestEviction(t *testing.T) {
 		t.Errorf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err1))
 	}
 
-	if val3 != "val3" {
-		t.Errorf("Unexpected value. Expected '%s', got '%s'\n", "val3", val3)
+	if !reflect.DeepEqual(val3, data3) {
+		t.Errorf("Unexpected value. Expected '%v', got '%v'\n", data3, val3)
 	}
 
-	if val4 != "val4" {
-		t.Errorf("Unexpected value. Expected '%s', got '%s'\n", "val4", val4)
+	if !reflect.DeepEqual(val4, data4) {
+		t.Errorf("Unexpected value. Expected '%v', got '%v'\n", data4, val4)
 	}
 }
