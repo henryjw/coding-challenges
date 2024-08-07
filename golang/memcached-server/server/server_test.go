@@ -35,7 +35,7 @@ func TestProcessGetCommand(t *testing.T) {
 		Noreply:   false,
 		ByteCount: 5,
 		ExpiresIn: 0,
-		Flags:     uint16(5),
+		Flags:     uint16(8),
 	}, "hello")
 
 	if err != nil {
@@ -51,15 +51,15 @@ func TestProcessGetCommand(t *testing.T) {
 		Flags:     uint16(5),
 	}, "")
 
-	if result != "hello" {
+	if result != "VALUE hello 8 5" {
 		t.Errorf("Unexpected result: '%s'. Expected: '%s'\n", result, "hello")
 	}
 }
 
 func TestGetCommandKeyDoesntExist(t *testing.T) {
 	server := New(cache.New(-1))
-	_, err := server.processCommand(utils.Command{
-		Name:      "set",
+	result, err := server.processCommand(utils.Command{
+		Name:      "get",
 		Key:       "test_key",
 		Noreply:   false,
 		ByteCount: 5,
@@ -68,6 +68,10 @@ func TestGetCommandKeyDoesntExist(t *testing.T) {
 	}, "hello")
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Unexpected error: %v\n", err)
+	}
+
+	if result != "END" {
+		t.Fatalf("Expected result to be empty string. Got '%s'\n", result)
 	}
 }

@@ -96,7 +96,7 @@ func (receiver *Server) handleConnection(conn net.Conn) {
 		command, parseCommandErr := utils.ParseCommand(message)
 
 		if parseCommandErr != nil {
-			sendMessage(fmt.Sprint("Unexpected error parsing the command: ", parseCommandErr), conn)
+			sendMessage(fmt.Sprint("Unexpected error parsing the command: ", parseCommandErr, "\r\n"), conn)
 			continue
 		}
 		// TODO: get data from connection if command name isn't "get"
@@ -112,7 +112,7 @@ func (receiver *Server) handleConnection(conn net.Conn) {
 			}
 		}
 
-		result, processCommandErr := receiver.processCommand(*command, data)
+		result, processCommandErr := receiver.processCommand(*command, strings.TrimSpace(data))
 
 		if processCommandErr != nil {
 			sendMessage(fmt.Sprint("Error processing command: ", processCommandErr, "\r\n"), conn)
@@ -159,8 +159,18 @@ func (receiver *Server) processSet(command utils.Command, data string) (string, 
 }
 
 func (receiver *Server) processGet(command utils.Command) (string, error) {
-	// TODO: update to allow return of data, flags, and bytecount
-	return "", errors.New("not yet implemented")
+	data, err := receiver.cache.Get(command.Key)
+
+	keyNotFoundError := &cache.KeyNotFoundError{}
+	if errors.As(err, &keyNotFoundError) {
+		return "END", nil
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("VALUE %s %d %d", data.Value, data.Flags, data.ByteCount), nil
 }
 
 func sendMessage(message string, writer io.Writer) error {
