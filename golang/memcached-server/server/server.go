@@ -17,8 +17,8 @@ type Server struct {
 }
 
 func New(cache *cache.Cache) *Server {
-	// Ideally, the type for the cache be an interface instead of a concrete type to allow flexibility of using different implementations.
-	//However, this is fine for the purpose of this project
+	// Ideally, the type for the cache should be an interface instead of a concrete type to allow flexibility of using different implementations.
+	// However, this is fine for the purpose of this project
 	return &Server{
 		cache: cache,
 	}
@@ -99,12 +99,12 @@ func (receiver *Server) handleConnection(conn net.Conn) {
 			sendMessage(fmt.Sprint("Unexpected error parsing the command: ", parseCommandErr, "\r\n"), conn)
 			continue
 		}
-		// TODO: get data from connection if command name isn't "get"
 
 		var data string
 
 		if command.Name != "get" {
 			var dataFetchErr error
+			// NOTE: there's no validation to check that the data size matches value of `byte count` in the command
 			data, dataFetchErr = reader.ReadString('\n')
 
 			if dataFetchErr != nil {
