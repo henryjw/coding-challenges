@@ -123,6 +123,26 @@ func (receiver *Cache) Replace(key string, data Data) error {
 	return receiver.Set(key, data)
 }
 
+// Append data is appended to the data matching the given key, if exists. Returns error if key doesn't exist
+func (receiver *Cache) Append(key string, data Data) error {
+	element, ok := receiver.lookupTable[key]
+
+	if !ok {
+		return &KeyNotFoundError{Key: key}
+	}
+
+	cachedData := element.Value.(*keyValue).Value
+	element.Value.(*keyValue).Value = Data{
+		Value:     cachedData.Value + data.Value,
+		ByteCount: cachedData.ByteCount + data.ByteCount,
+		// There's no requirements in the project regarding the handling of this field, so
+		// just leave it as it is
+		Flags: cachedData.Flags,
+	}
+
+	return nil
+}
+
 func (receiver *Cache) hasKey(key string) bool {
 	_, ok := receiver.lookupTable[key]
 

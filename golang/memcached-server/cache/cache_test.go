@@ -309,3 +309,51 @@ func TestReplace_KeyDoesntExist(t *testing.T) {
 		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
 	}
 }
+
+func TestAppend(t *testing.T) {
+	cache := New(-1)
+
+	cache.Set("test", Data{
+		Value:     "hello",
+		ByteCount: 5,
+		Flags:     uint16(1),
+	})
+
+	err := cache.Append("test", Data{
+		Value:     ", world!",
+		ByteCount: 8,
+		Flags:     uint16(2),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cachedData, err := cache.Get("test")
+
+	if err != nil {
+		t.Fatalf("Error getting stored value: %v\n", err)
+	}
+
+	expected := Data{
+		Value:     "hello, world!",
+		ByteCount: 13,
+		Flags:     uint16(1),
+	}
+
+	if !reflect.DeepEqual(expected, cachedData) {
+		t.Errorf("Unexpected value. Expected '%v', got '%v'\n", expected, cachedData)
+	}
+}
+
+func TestAppend_KeyDoesntExist(t *testing.T) {
+	cache := New(-1)
+
+	err := cache.Append("test", Data{})
+
+	expectedErr := &KeyNotFoundError{}
+
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
+	}
+}

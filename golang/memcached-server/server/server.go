@@ -128,17 +128,18 @@ func (receiver *Server) handleConnection(conn net.Conn) {
 }
 
 // processCommand returns status for command. If an error occurs, it returns the status as an empty string
-func (receiver *Server) processCommand(command utils.Command, data string) (string, error) {
+func (receiver *Server) processCommand(command utils.Command, value string) (string, error) {
 	switch command.Name {
 	case "set":
-		return receiver.processSet(command, data)
+		return receiver.processSet(command, value)
 	case "get":
 		return receiver.processGet(command)
 	case "add":
-		return receiver.processAdd(command, data)
+		return receiver.processAdd(command, value)
 	case "replace":
-		return receiver.processReplace(command, data)
+		return receiver.processReplace(command, value)
 	case "append":
+		return receiver.processAppend(command, value)
 	case "prepend":
 		return "", fmt.Errorf("command '%s' not yet implemented", command.Name)
 	}
@@ -197,6 +198,26 @@ func (receiver *Server) processAdd(command utils.Command, value string) (string,
 
 func (receiver *Server) processReplace(command utils.Command, value string) (string, error) {
 	err := receiver.cache.Replace(command.Key, cache.Data{
+		Value:     value,
+		Flags:     command.Flags,
+		ByteCount: command.ByteCount,
+	})
+
+	keyNotFoundError := &cache.KeyNotFoundError{}
+
+	if errors.As(err, &keyNotFoundError) {
+		return "NOT_STORED", nil
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return "STORED", nil
+}
+
+func (receiver *Server) processAppend(command utils.Command, value string) (string, error) {
+	err := receiver.cache.Append(command.Key, cache.Data{
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
