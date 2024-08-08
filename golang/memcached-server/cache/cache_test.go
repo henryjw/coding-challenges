@@ -233,3 +233,41 @@ func TestEviction(t *testing.T) {
 		t.Errorf("Unexpected value. Expected '%v', got '%v'\n", data4, val4)
 	}
 }
+
+func TestAdd(t *testing.T) {
+	cache := New(-1)
+	data := Data{
+		Value:     "hello",
+		ByteCount: 5,
+		Flags:     uint16(1),
+	}
+
+	err := cache.Add("test", data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cachedData, err := cache.Get("test")
+
+	if err != nil {
+		t.Fatalf("Error getting stored value: %v\n", err)
+	}
+
+	if !reflect.DeepEqual(data, cachedData) {
+		t.Errorf("Unexpected value. Expected '%v', got '%v'\n", data, cachedData)
+	}
+}
+
+func TestAdd_KeyAlreadyExists(t *testing.T) {
+	cache := New(-1)
+
+	cache.Set("test", Data{})
+	err := cache.Add("test", Data{})
+
+	expectedErr := &KeyAlreadyExistsError{}
+
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
+	}
+}

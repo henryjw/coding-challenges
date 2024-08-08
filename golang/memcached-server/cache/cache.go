@@ -91,7 +91,6 @@ func (receiver *Cache) Get(key string) (Data, error) {
 	receiver.accessList.MoveToBack(element)
 
 	return value, nil
-
 }
 
 // Delete key if it exists. Currently there are no errors for this function
@@ -106,4 +105,20 @@ func (receiver *Cache) Delete(key string) error {
 	delete(receiver.lookupTable, key)
 
 	return nil
+}
+
+func (receiver *Cache) Add(key string, data Data) error {
+	if receiver.hasKey(key) {
+		return &KeyAlreadyExistsError{Key: key}
+	}
+
+	err := receiver.Set(key, data)
+
+	return err
+}
+
+func (receiver *Cache) hasKey(key string) bool {
+	_, ok := receiver.lookupTable[key]
+
+	return ok
 }

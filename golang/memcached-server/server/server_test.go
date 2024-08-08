@@ -8,7 +8,6 @@ import (
 
 func TestProcessSetCommand(t *testing.T) {
 	server := New(cache.New(-1))
-	// Is validation required to ensure that the length of the data matches the byte_count field?
 	result, err := server.processCommand(utils.Command{
 		Name:      "set",
 		Key:       "test_key",
@@ -23,6 +22,55 @@ func TestProcessSetCommand(t *testing.T) {
 	}
 
 	if result != "STORED" {
+		t.Errorf("Unexpected result: %s\n", result)
+	}
+}
+
+func TestProcessAddCommand(t *testing.T) {
+	server := New(cache.New(-1))
+	result, err := server.processCommand(utils.Command{
+		Name:      "add",
+		Key:       "test_key",
+		Noreply:   false,
+		ByteCount: 5,
+		ExpiresIn: 0,
+		Flags:     uint16(5),
+	}, "hello")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result != "STORED" {
+		t.Errorf("Unexpected result: %s\n", result)
+	}
+}
+
+func TestProcessAddCommand_KeyAlreadyExists(t *testing.T) {
+	key := "test_key"
+	c := cache.New(-1)
+	server := New(c)
+
+	err := c.Set(key, cache.Data{})
+
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	result, err := server.processCommand(utils.Command{
+		Name:      "add",
+		Key:       key,
+		Noreply:   false,
+		ByteCount: 5,
+		ExpiresIn: 0,
+		Flags:     uint16(5),
+	}, "hello")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result != "NOT_STORED" {
 		t.Errorf("Unexpected result: %s\n", result)
 	}
 }

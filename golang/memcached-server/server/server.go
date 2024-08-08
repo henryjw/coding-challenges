@@ -135,6 +135,7 @@ func (receiver *Server) processCommand(command utils.Command, data string) (stri
 	case "get":
 		return receiver.processGet(command)
 	case "add":
+		return receiver.processAdd(command, data)
 	case "replace":
 	case "append":
 	case "prepend":
@@ -144,12 +145,12 @@ func (receiver *Server) processCommand(command utils.Command, data string) (stri
 	return "", fmt.Errorf("unexpected command name '%s'", command.Name)
 }
 
-func (receiver *Server) processSet(command utils.Command, data string) (string, error) {
+func (receiver *Server) processSet(command utils.Command, value string) (string, error) {
 	// TODO: set key expiration once supported by the cache
 	err := receiver.cache.Set(command.Key, cache.Data{
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
-		Value:     data,
+		Value:     value,
 	})
 	if err != nil {
 		return "", err
@@ -171,6 +172,28 @@ func (receiver *Server) processGet(command utils.Command) (string, error) {
 	}
 
 	return fmt.Sprintf("VALUE %s %d %d", data.Value, data.Flags, data.ByteCount), nil
+}
+
+func (receiver *Server) processAdd(command utils.Command, value string) (string, error) {
+	data := cache.Data{
+		Value:     value,
+		Flags:     command.Flags,
+		ByteCount: command.ByteCount,
+	}
+
+	err := receiver.cache.Add(command.Key, data)
+
+	keyExistsError := &cache.KeyAlreadyExistsError{}
+
+	if errors.As(err, &keyExistsError) {
+		return "NOT_STORED", nil
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return "STORED", nil
 }
 
 func sendMessage(message string, writer io.Writer) error {
