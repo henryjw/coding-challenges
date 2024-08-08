@@ -109,10 +109,14 @@ func (receiver *Server) handleConnection(conn net.Conn) {
 
 			if dataFetchErr != nil {
 				log.Println("Error reading data: ", dataFetchErr)
+				continue
 			}
+
+			// Remove delimiter characters
+			data = data[0 : len(data)-2]
 		}
 
-		result, processCommandErr := receiver.processCommand(*command, strings.TrimSpace(data))
+		result, processCommandErr := receiver.processCommand(*command, data)
 
 		if processCommandErr != nil {
 			sendMessage(fmt.Sprint("Error processing command: ", processCommandErr, "\r\n"), conn)
