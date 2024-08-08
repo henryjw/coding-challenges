@@ -46,7 +46,7 @@ func TestProcessAddCommand(t *testing.T) {
 	}
 }
 
-func TestProcessAddCommand_KeyAlreadyExists(t *testing.T) {
+func TestProcessReplaceCommand(t *testing.T) {
 	key := "test_key"
 	c := cache.New(-1)
 	server := New(c)
@@ -58,8 +58,28 @@ func TestProcessAddCommand_KeyAlreadyExists(t *testing.T) {
 	}
 
 	result, err := server.processCommand(utils.Command{
-		Name:      "add",
+		Name:      "replace",
 		Key:       key,
+		Noreply:   false,
+		ByteCount: 5,
+		ExpiresIn: 0,
+		Flags:     uint16(5),
+	}, "hello")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result != "STORED" {
+		t.Errorf("Unexpected result: %s\n", result)
+	}
+}
+
+func TestProcessReplaceCommand__KeyDoesntExist(t *testing.T) {
+	server := New(cache.New(-1))
+	result, err := server.processCommand(utils.Command{
+		Name:      "replace",
+		Key:       "test_key",
 		Noreply:   false,
 		ByteCount: 5,
 		ExpiresIn: 0,

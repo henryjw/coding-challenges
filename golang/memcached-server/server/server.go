@@ -137,6 +137,7 @@ func (receiver *Server) processCommand(command utils.Command, data string) (stri
 	case "add":
 		return receiver.processAdd(command, data)
 	case "replace":
+		return receiver.processReplace(command, data)
 	case "append":
 	case "prepend":
 		return "", fmt.Errorf("command '%s' not yet implemented", command.Name)
@@ -186,6 +187,28 @@ func (receiver *Server) processAdd(command utils.Command, value string) (string,
 	keyExistsError := &cache.KeyAlreadyExistsError{}
 
 	if errors.As(err, &keyExistsError) {
+		return "NOT_STORED", nil
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return "STORED", nil
+}
+
+func (receiver *Server) processReplace(command utils.Command, value string) (string, error) {
+	data := cache.Data{
+		Value:     value,
+		Flags:     command.Flags,
+		ByteCount: command.ByteCount,
+	}
+
+	err := receiver.cache.Replace(command.Key, data)
+
+	keyNotFoundError := &cache.KeyNotFoundError{}
+
+	if errors.As(err, &keyNotFoundError) {
 		return "NOT_STORED", nil
 	}
 

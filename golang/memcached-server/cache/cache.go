@@ -112,9 +112,15 @@ func (receiver *Cache) Add(key string, data Data) error {
 		return &KeyAlreadyExistsError{Key: key}
 	}
 
-	err := receiver.Set(key, data)
+	return receiver.Set(key, data)
+}
 
-	return err
+func (receiver *Cache) Replace(key string, data Data) error {
+	if !receiver.hasKey(key) {
+		return &KeyNotFoundError{Key: key}
+	}
+
+	return receiver.Set(key, data)
 }
 
 func (receiver *Cache) hasKey(key string) bool {
