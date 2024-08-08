@@ -141,7 +141,7 @@ func (receiver *Server) processCommand(command utils.Command, value string) (str
 	case "append":
 		return receiver.processAppend(command, value)
 	case "prepend":
-		return "", fmt.Errorf("command '%s' not yet implemented", command.Name)
+		return receiver.processPrepend(command, value)
 	}
 
 	return "", fmt.Errorf("unexpected command name '%s'", command.Name)
@@ -218,6 +218,26 @@ func (receiver *Server) processReplace(command utils.Command, value string) (str
 
 func (receiver *Server) processAppend(command utils.Command, value string) (string, error) {
 	err := receiver.cache.Append(command.Key, cache.Data{
+		Value:     value,
+		Flags:     command.Flags,
+		ByteCount: command.ByteCount,
+	})
+
+	keyNotFoundError := &cache.KeyNotFoundError{}
+
+	if errors.As(err, &keyNotFoundError) {
+		return "NOT_STORED", nil
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return "STORED", nil
+}
+
+func (receiver *Server) processPrepend(command utils.Command, value string) (string, error) {
+	err := receiver.cache.Prepend(command.Key, cache.Data{
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
