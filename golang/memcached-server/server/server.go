@@ -176,13 +176,11 @@ func (receiver *Server) processGet(command utils.Command) (string, error) {
 }
 
 func (receiver *Server) processAdd(command utils.Command, value string) (string, error) {
-	data := cache.Data{
+	err := receiver.cache.Add(command.Key, cache.Data{
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
-	}
-
-	err := receiver.cache.Add(command.Key, data)
+	})
 
 	keyExistsError := &cache.KeyAlreadyExistsError{}
 
@@ -198,13 +196,11 @@ func (receiver *Server) processAdd(command utils.Command, value string) (string,
 }
 
 func (receiver *Server) processReplace(command utils.Command, value string) (string, error) {
-	data := cache.Data{
+	err := receiver.cache.Replace(command.Key, cache.Data{
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
-	}
-
-	err := receiver.cache.Replace(command.Key, data)
+	})
 
 	keyNotFoundError := &cache.KeyNotFoundError{}
 
