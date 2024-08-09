@@ -10,6 +10,7 @@ import (
 	"memcached-server/utils"
 	"net"
 	"strings"
+	"time"
 )
 
 type Server struct {
@@ -152,11 +153,11 @@ func (receiver *Server) processCommand(command utils.Command, value string) (str
 }
 
 func (receiver *Server) processSet(command utils.Command, value string) (string, error) {
-	// TODO: set key expiration once supported by the cache
 	err := receiver.cache.Set(command.Key, cache.Data{
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
 		Value:     value,
+		ExpiresAt: getExpireTime(command),
 	})
 	if err != nil {
 		return "", err
@@ -185,6 +186,7 @@ func (receiver *Server) processAdd(command utils.Command, value string) (string,
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
+		ExpiresAt: getExpireTime(command),
 	})
 
 	keyExistsError := &cache.KeyAlreadyExistsError{}
@@ -205,6 +207,7 @@ func (receiver *Server) processReplace(command utils.Command, value string) (str
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
+		ExpiresAt: getExpireTime(command),
 	})
 
 	keyNotFoundError := &cache.KeyNotFoundError{}
@@ -225,6 +228,7 @@ func (receiver *Server) processAppend(command utils.Command, value string) (stri
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
+		ExpiresAt: getExpireTime(command),
 	})
 
 	keyNotFoundError := &cache.KeyNotFoundError{}
@@ -245,6 +249,7 @@ func (receiver *Server) processPrepend(command utils.Command, value string) (str
 		Value:     value,
 		Flags:     command.Flags,
 		ByteCount: command.ByteCount,
+		ExpiresAt: getExpireTime(command),
 	})
 
 	keyNotFoundError := &cache.KeyNotFoundError{}
@@ -271,4 +276,13 @@ func sendMessage(message string, writer io.Writer) error {
 	}
 
 	return err
+}
+
+func getExpireTime(command utils.Command) time.Time {
+	// Never expire
+	if command.ExpiresIn == 0 {
+		return time.UnixMicro(0)
+	}
+
+	return time.Now().Add(time.Second * time.Duration(command.ExpiresIn))
 }

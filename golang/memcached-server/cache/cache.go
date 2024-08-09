@@ -15,6 +15,7 @@ type Data struct {
 	Value     string
 	Flags     uint16
 	ByteCount int
+	// Time at which the data will expire. Defaults to never expire (`time.UnixMilli(0)`)
 	ExpiresAt time.Time
 }
 
