@@ -198,15 +198,22 @@ func (receiver *Cache) setUpCleanupBackgroundTask(frequencyMs int) {
 }
 
 func (receiver *Cache) clearExpiredData() {
+	numRecordsDeleted := 0
 	for key, _ := range receiver.lookupTable {
 		if receiver.isKeyExpired(key) {
+			numRecordsDeleted += 1
 			receiver.Delete(key)
 		}
+	}
+
+	if numRecordsDeleted > 0 {
+		log.Printf("Deleted %d records\n", numRecordsDeleted)
 	}
 }
 
 func (receiver *Cache) stopCleanupBackgroundTask() {
 	receiver.shouldRunCleanupTask = false
+	log.Println("Cleanup task stopped")
 }
 
 func (receiver *Cache) hasKey(key string) bool {
