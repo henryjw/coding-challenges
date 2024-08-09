@@ -2,6 +2,7 @@ package cache
 
 import (
 	"container/list"
+	"log"
 	"math"
 	"time"
 )
@@ -22,9 +23,10 @@ type Data struct {
 // Cache simple in-memory cache
 type Cache struct {
 	// Least frequently used elements are in the fronts
-	accessList  *list.List
-	lookupTable map[string]*list.Element
-	Capacity    int
+	accessList           *list.List
+	lookupTable          map[string]*list.Element
+	shouldRunCleanupTask bool
+	Capacity             int
 }
 
 // New Creates new Cache instance with a given capacity. Capacity will be unbounded if `capacity <= 0`
@@ -34,9 +36,10 @@ func New(capacity int) *Cache {
 	}
 
 	return &Cache{
-		accessList:  list.New(),
-		lookupTable: make(map[string]*list.Element),
-		Capacity:    capacity,
+		accessList:           list.New(),
+		lookupTable:          make(map[string]*list.Element),
+		Capacity:             capacity,
+		shouldRunCleanupTask: false,
 	}
 }
 
@@ -170,6 +173,40 @@ func (receiver *Cache) Prepend(key string, data Data) error {
 		Flags:     cachedData.Flags,
 		ExpiresAt: cachedData.ExpiresAt,
 	})
+}
+
+// RunExpireDataCleanupBackgroundTask starts background task to clean up expired data. No effect if there's already
+// a task running for this cache instance. It's recommended to not set the frequency too low (less than 5 seconds) since it will negatively
+// impact performance
+func (receiver *Cache) RunExpireDataCleanupBackgroundTask(cleanupFrequencyMs int) {
+	go receiver.setUpCleanupBackgroundTask(cleanupFrequencyMs)
+}
+
+// Close frees up resources and any running background tasks like Cache.RunExpireDataCleanupBackgroundTask
+func (receiver *Cache) Close() {
+	receiver.stopCleanupBackgroundTask()
+}
+
+func (receiver *Cache) setUpCleanupBackgroundTask(frequencyMs int) {
+	receiver.shouldRunCleanupTask = true
+
+	for receiver.shouldRunCleanupTask {
+		log.Print("Deleting expired records...")
+		receiver.clearExpiredData()
+		time.Sleep(time.Millisecond * time.Duration(frequencyMs))
+	}
+}
+
+func (receiver *Cache) clearExpiredData() {
+	for key, _ := range receiver.lookupTable {
+		if receiver.isKeyExpired(key) {
+			receiver.Delete(key)
+		}
+	}
+}
+
+func (receiver *Cache) stopCleanupBackgroundTask() {
+	receiver.shouldRunCleanupTask = false
 }
 
 func (receiver *Cache) hasKey(key string) bool {

@@ -19,7 +19,9 @@ func main() {
 			},
 		},
 		Action: func(context *cli.Context) error {
-			return server.New(cache.New(-1)).Run(context.Int("p"))
+			c := cache.New(-1)
+			c.RunExpireDataCleanupBackgroundTask(1000)
+			return server.New(c).Run(context.Int("p"))
 		},
 	}
 
