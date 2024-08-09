@@ -3,6 +3,7 @@ package cache
 import (
 	"container/list"
 	"math"
+	"time"
 )
 
 type keyValue struct {
@@ -14,6 +15,7 @@ type Data struct {
 	Value     string
 	Flags     uint16
 	ByteCount int
+	ExpiresAt time.Time
 }
 
 // Cache simple in-memory cache
@@ -82,11 +84,21 @@ func (receiver *Cache) Get(key string) (Data, error) {
 	}
 
 	if _, exists := receiver.lookupTable[key]; !exists {
-		return Data{}, &KeyNotFoundError{}
+		return Data{}, &KeyNotFoundError{key}
 	}
 
 	element := receiver.lookupTable[key]
 	value := element.Value.(*keyValue).Value
+
+	if isExpired(value) {
+		err := receiver.Delete(key)
+
+		if err != nil {
+			return Data{}, err
+		}
+
+		return Data{}, &KeyNotFoundError{key}
+	}
 
 	receiver.accessList.MoveToBack(element)
 
@@ -108,7 +120,7 @@ func (receiver *Cache) Delete(key string) error {
 }
 
 func (receiver *Cache) Add(key string, data Data) error {
-	if receiver.hasKey(key) {
+	if receiver.hasKey(key) && !receiver.isKeyExpired(key) {
 		return &KeyAlreadyExistsError{Key: key}
 	}
 
@@ -116,7 +128,7 @@ func (receiver *Cache) Add(key string, data Data) error {
 }
 
 func (receiver *Cache) Replace(key string, data Data) error {
-	if !receiver.hasKey(key) {
+	if !receiver.hasKey(key) || receiver.isKeyExpired(key) {
 		return &KeyNotFoundError{Key: key}
 	}
 
@@ -125,46 +137,56 @@ func (receiver *Cache) Replace(key string, data Data) error {
 
 // Append data is appended to the data matching the given key, if exists. Returns error if key doesn't exist
 func (receiver *Cache) Append(key string, data Data) error {
-	element, ok := receiver.lookupTable[key]
+	cachedData, err := receiver.Get(key)
 
-	if !ok {
-		return &KeyNotFoundError{Key: key}
+	if err != nil {
+		return err
 	}
 
-	cachedData := element.Value.(*keyValue).Value
-	element.Value.(*keyValue).Value = Data{
+	return receiver.Set(key, Data{
 		Value:     cachedData.Value + data.Value,
 		ByteCount: cachedData.ByteCount + data.ByteCount,
-		// There's no requirements in the project regarding the handling of this field, so
+		// There's no requirements in the project regarding the handling of these fields, so
 		// just leave it as it is
-		Flags: cachedData.Flags,
-	}
-
-	return nil
+		Flags:     cachedData.Flags,
+		ExpiresAt: cachedData.ExpiresAt,
+	})
 }
 
 // Prepend data is prepended to the data matching the given key, if exists. Returns error if key doesn't exist
 func (receiver *Cache) Prepend(key string, data Data) error {
-	element, ok := receiver.lookupTable[key]
+	cachedData, err := receiver.Get(key)
 
-	if !ok {
-		return &KeyNotFoundError{Key: key}
+	if err != nil {
+		return err
 	}
 
-	cachedData := element.Value.(*keyValue).Value
-	element.Value.(*keyValue).Value = Data{
+	return receiver.Set(key, Data{
 		Value:     data.Value + cachedData.Value,
 		ByteCount: cachedData.ByteCount + data.ByteCount,
-		// There's no requirements in the project regarding the handling of this field, so
+		// There's no requirements in the project regarding the handling of these fields, so
 		// just leave it as it is
-		Flags: cachedData.Flags,
-	}
-
-	return nil
+		Flags:     cachedData.Flags,
+		ExpiresAt: cachedData.ExpiresAt,
+	})
 }
 
 func (receiver *Cache) hasKey(key string) bool {
 	_, ok := receiver.lookupTable[key]
 
 	return ok
+}
+
+func (receiver *Cache) isKeyExpired(key string) bool {
+	element, ok := receiver.lookupTable[key]
+
+	if !ok {
+		return false
+	}
+
+	return isExpired(element.Value.(*keyValue).Value)
+}
+
+func isExpired(data Data) bool {
+	return data.ExpiresAt.UnixMilli() > 0 && time.Now().UnixMilli() > data.ExpiresAt.UnixMilli()
 }

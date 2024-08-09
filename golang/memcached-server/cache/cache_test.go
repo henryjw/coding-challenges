@@ -5,6 +5,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 )
 
 // TODO: figure out how to generate exhaustive test cases to have higher confidence that this works as expected
@@ -403,5 +404,163 @@ func TestPrepend_KeyDoesntExist(t *testing.T) {
 
 	if !errors.As(err, &expectedErr) {
 		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
+	}
+}
+
+func TestKeyExpiration_Get(t *testing.T) {
+	cache := New(-1)
+	key := "test"
+	data := Data{
+		Value:     "hello",
+		ByteCount: 5,
+		Flags:     uint16(0),
+		ExpiresAt: time.UnixMilli(1),
+	}
+
+	err := cache.Set(key, data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = cache.Get(key)
+
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+
+	expectedErr := &KeyNotFoundError{}
+
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
+	}
+}
+
+func TestKeyExpiration_Add(t *testing.T) {
+	cache := New(-1)
+
+	cache.Set("test", Data{
+		Value:     "hello",
+		ByteCount: 5,
+		Flags:     uint16(1),
+		ExpiresAt: time.UnixMilli(1),
+	})
+
+	data := Data{
+		Value:     "hi",
+		ByteCount: 2,
+		Flags:     uint16(2),
+	}
+
+	err := cache.Add("test", data)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cachedData, err := cache.Get("test")
+
+	if err != nil {
+		t.Fatalf("Error getting stored value: %v\n", err)
+	}
+
+	if !reflect.DeepEqual(data, cachedData) {
+		t.Errorf("Unexpected value. Expected '%v', got '%v'\n", data, cachedData)
+	}
+}
+func TestKeyExpiration_Append(t *testing.T) {
+	cache := New(-1)
+
+	cache.Set("test", Data{
+		Value:     "hello",
+		ByteCount: 5,
+		Flags:     uint16(1),
+		ExpiresAt: time.UnixMilli(1),
+	})
+
+	err := cache.Append("test", Data{
+		Value:     ", world!",
+		ByteCount: 8,
+		Flags:     uint16(2),
+	})
+
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+
+	expectedErr := &KeyNotFoundError{}
+
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
+	}
+}
+
+func TestKeyExpiration_Prepend(t *testing.T) {
+	cache := New(-1)
+
+	cache.Set("test", Data{
+		Value:     "hello",
+		ByteCount: 5,
+		Flags:     uint16(1),
+		ExpiresAt: time.UnixMilli(1),
+	})
+
+	err := cache.Prepend("test", Data{
+		Value:     ", world!",
+		ByteCount: 8,
+		Flags:     uint16(2),
+	})
+
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+
+	expectedErr := &KeyNotFoundError{}
+
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
+	}
+}
+
+func TestKeyExpiration_Replace(t *testing.T) {
+	cache := New(-1)
+	data := Data{
+		Value:     "hello",
+		ByteCount: 5,
+		Flags:     uint16(1),
+		ExpiresAt: time.UnixMilli(1),
+	}
+
+	cache.Set("test", data)
+	err := cache.Replace("test", data)
+
+	if err == nil {
+		t.Fatal("Expected error")
+	}
+
+	expectedErr := &KeyNotFoundError{}
+
+	if !errors.As(err, &expectedErr) {
+		t.Fatalf("Unexpected error type. Expected %v, got %v\n", reflect.TypeOf(expectedErr), reflect.TypeOf(err))
+	}
+}
+
+func TestKeyExpiration_Delete(t *testing.T) {
+	cache := New(10)
+	cache.Set("test", Data{
+		Flags:     uint16(32),
+		Value:     "hello",
+		ByteCount: 5,
+		ExpiresAt: time.UnixMilli(1),
+	})
+
+	err := cache.Delete("test")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if cache.Size() != 0 {
+		t.Fatalf("Incorrect cache size. Expected: %d, got: %d\n", 0, cache.Size())
 	}
 }
