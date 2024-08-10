@@ -10,6 +10,8 @@ import (
 func TestActiveExpirationCleanup(t *testing.T) {
 	cache := New(-1)
 
+	defer cache.stopCleanupBackgroundTask()
+
 	cache.Set("test", Data{
 		Value:     "hello",
 		ByteCount: 5,
@@ -31,6 +33,8 @@ func TestActiveExpirationCleanup(t *testing.T) {
 
 func TestActiveExpirationCleanupNoExpiredRecords(t *testing.T) {
 	cache := New(-1)
+
+	defer cache.stopCleanupBackgroundTask()
 
 	cache.Set("test", Data{
 		Value:     "hello",
