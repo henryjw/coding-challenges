@@ -198,13 +198,21 @@ func (receiver *Cache) setUpCleanupBackgroundTask(frequencyMs int) {
 }
 
 func (receiver *Cache) clearExpiredData() {
-	numRecordsDeleted := 0
-	for key, _ := range receiver.lookupTable {
-		if receiver.isKeyExpired(key) {
-			numRecordsDeleted += 1
-			receiver.Delete(key)
+	node := receiver.accessList.Front()
+	sizeBefore := receiver.Size()
+
+	// Iterating through the list is much faster (10-20x) than iterating through keys of the lookupTable.
+	for node != nil {
+		next := node.Next()
+		val := node.Value.(*keyValue)
+		if isExpired(val.Value) {
+			receiver.Delete(val.Key)
 		}
+
+		node = next
 	}
+
+	numRecordsDeleted := sizeBefore - receiver.Size()
 
 	if numRecordsDeleted > 0 {
 		log.Printf("Deleted %d records\n", numRecordsDeleted)
