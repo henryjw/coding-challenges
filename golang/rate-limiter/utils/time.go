@@ -8,6 +8,18 @@ type TimeSource interface {
 
 type RealTimeSource struct{}
 
-func (receiver RealTimeSource) Now() time.Time {
+func (receiver *RealTimeSource) Now() time.Time {
 	return time.Now()
+}
+
+type FakeTimeSource struct {
+	FixedTime time.Time
+}
+
+func (f *FakeTimeSource) Now() time.Time {
+	return f.FixedTime
+}
+
+func (f *FakeTimeSource) SetTime(t time.Time) {
+	f.FixedTime = t
 }

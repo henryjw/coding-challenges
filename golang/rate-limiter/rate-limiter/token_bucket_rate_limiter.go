@@ -40,7 +40,7 @@ func (receiver *TokenBucketRateLimiter) AllowRequest(requestInfo RequestInfo) (b
 	}
 
 	secondsSincePreviousTokenGrant := uint(receiver.timeSource.Now().Sub(bucketData.previousTokenGrantTime).Seconds())
-	numTokensToGrant := (secondsSincePreviousTokenGrant / 60) * receiver.maxAllowedRequestsPerMinute
+	numTokensToGrant := uint((float64(secondsSincePreviousTokenGrant) / float64(60)) * float64(receiver.maxAllowedRequestsPerMinute))
 
 	if numTokensToGrant > 0 {
 		log.Printf("Granting %d tokens\n", numTokensToGrant)
@@ -61,4 +61,14 @@ func (receiver *TokenBucketRateLimiter) AllowRequest(requestInfo RequestInfo) (b
 
 func generateBucketKey(info RequestInfo) string {
 	return fmt.Sprintf("%s:%s", info.Endpoint, info.IPAddress)
+}
+
+func (receiver *TokenBucketRateLimiter) getNumberOfTokensRemaining(info RequestInfo) uint {
+	bucketData, ok := receiver.buckets[generateBucketKey(info)]
+
+	if !ok {
+		return 0
+	}
+
+	return bucketData.numTokens
 }

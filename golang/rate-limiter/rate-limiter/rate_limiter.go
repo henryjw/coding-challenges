@@ -31,7 +31,7 @@ type Config struct {
 func New(config Config) (IRateLimiter, error) {
 	switch config.Algorithm {
 	case RateLimitTokenBucket:
-		return NewTokenBucketRateLimiter(config.MaxAllowedRequestsPerMinute, utils.RealTimeSource{}), nil
+		return NewTokenBucketRateLimiter(config.MaxAllowedRequestsPerMinute, &utils.RealTimeSource{}), nil
 	default:
 		return nil, InvalidRateLimitAlgorithmError
 	}
