@@ -1,7 +1,6 @@
 package rateLimiter
 
 import (
-	"fmt"
 	"log"
 	"rate-limiter/m/v2/utils"
 	"time"
@@ -27,7 +26,7 @@ func NewTokenBucketRateLimiter(maxAllowedRequestsPerMinute uint, timeSource util
 }
 
 func (receiver *TokenBucketRateLimiter) AllowRequest(requestInfo RequestInfo) (bool, error) {
-	bucketKey := generateBucketKey(requestInfo)
+	bucketKey := generateRequestKey(requestInfo)
 	bucketData, exists := receiver.buckets[bucketKey]
 
 	if !exists {
@@ -59,12 +58,8 @@ func (receiver *TokenBucketRateLimiter) AllowRequest(requestInfo RequestInfo) (b
 	return true, nil
 }
 
-func generateBucketKey(info RequestInfo) string {
-	return fmt.Sprintf("%s:%s", info.Endpoint, info.IPAddress)
-}
-
 func (receiver *TokenBucketRateLimiter) getNumberOfTokensRemaining(info RequestInfo) uint {
-	bucketData, ok := receiver.buckets[generateBucketKey(info)]
+	bucketData, ok := receiver.buckets[generateRequestKey(info)]
 
 	if !ok {
 		return 0

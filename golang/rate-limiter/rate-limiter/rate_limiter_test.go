@@ -7,7 +7,7 @@ import (
 
 func TestNewTokenBucketRateLimiter(t *testing.T) {
 	instance, err := New(Config{
-		Algorithm:                   RateLimitTokenBucket,
+		Algorithm:                   AlgorithmTokenBucket,
 		MaxAllowedRequestsPerMinute: uint(5),
 	})
 
@@ -15,12 +15,20 @@ func TestNewTokenBucketRateLimiter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	instanceType := reflect.TypeOf(instance)
-	expectedInstanceType := reflect.TypeOf(&TokenBucketRateLimiter{})
+	assertTypes(instance, reflect.TypeOf(&TokenBucketRateLimiter{}), t)
+}
 
-	if instanceType != expectedInstanceType {
-		t.Errorf("Unexpected instance type. Expected %v, got %v\n", expectedInstanceType, instanceType)
+func TestNewFixedWindowCounterRateLimiter(t *testing.T) {
+	instance, err := New(Config{
+		Algorithm:                   AlgorithmFixedWindowCounter,
+		MaxAllowedRequestsPerMinute: uint(5),
+	})
+
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	assertTypes(instance, reflect.TypeOf(&FixedWindowCounterRateLimiter{}), t)
 }
 
 func TestInvalidRateLimitAlgorithm(t *testing.T) {
@@ -35,5 +43,12 @@ func TestInvalidRateLimitAlgorithm(t *testing.T) {
 
 	if instance != nil {
 		t.Error("Instance should be nil")
+	}
+}
+
+func assertTypes(instance any, expectedType reflect.Type, t *testing.T) {
+	instanceType := reflect.TypeOf(instance)
+	if reflect.TypeOf(instance) != expectedType {
+		t.Errorf("Unexpected instance type. Expected %v, got %v\n", expectedType, instanceType)
 	}
 }

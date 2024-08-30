@@ -8,8 +8,8 @@ import (
 
 func main() {
 	limiter, err := rateLimiter.New(rateLimiter.Config{
-		Algorithm:                   rateLimiter.RateLimitTokenBucket,
-		MaxAllowedRequestsPerMinute: 3,
+		Algorithm:                   rateLimiter.AlgorithmFixedWindowCounter,
+		MaxAllowedRequestsPerMinute: 60,
 	})
 
 	if err != nil {
