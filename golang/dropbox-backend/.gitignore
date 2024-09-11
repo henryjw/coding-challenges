@@ -1,0 +1,2 @@
+# Don't commit the SQLite databases to Git
+*.db
