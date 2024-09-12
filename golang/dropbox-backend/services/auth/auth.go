@@ -13,6 +13,7 @@ var jwtSecret = []byte("this is a learning project. it's ok to hardcode this her
 
 var InvalidLoginError = errors.New("invalid username or password")
 var JTWCreateError = errors.New("error generating jwt")
+var UserAlreadyExistsError = errors.New("user already exists")
 
 type User struct {
 	Username string `json:"username"`
@@ -64,7 +65,23 @@ func (receiver AuthService) Login(user User) (string, error) {
 }
 
 func (receiver AuthService) SignUp(user User) error {
-	return errors.New("not yet implemented")
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = receiver.db.Exec("INSERT INTO Users (username, password) VALUES (?, ?)", user.Username, hashedPassword)
+
+	if err != nil {
+		if err.Error() == "UNIQUE constraint failed: users.username" {
+			return UserAlreadyExistsError
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func generateJwt(username string, expires time.Time) (string, error) {

@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="4f7b6797-bad8-40a2-87cb-5279b0fe3cf8" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dropbox-backend/.idea/git_toolbox_blame.xml" beforeDir="false" afterPath="$PROJECT_DIR$/dropbox-backend/.idea/git_toolbox_blame.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dropbox-backend/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/dropbox-backend/server.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dropbox-backend/services/auth/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/dropbox-backend/services/auth/auth.go" afterDir="false" />
     </list>
