@@ -39,7 +39,13 @@ func (receiver AuthService) Login(user User) (string, error) {
 	err := receiver.db.QueryRow("SELECT password FROM Users WHERE username = ?", user.Username).Scan(&passwordHash)
 
 	if err != nil {
-		return "", InvalidLoginError
+		// Should use a more reliable method to check for error (e.g., error code), but it's fine
+		// for this toy project
+		if err.Error() == "sql: no rows in result set" {
+			return "", InvalidLoginError
+		} else {
+			return "", err
+		}
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(user.Password))
 

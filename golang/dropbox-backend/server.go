@@ -13,6 +13,10 @@ type Server struct {
 	authService *auth.AuthService
 }
 
+type ErrorResponse struct {
+	Err string `json:"err"`
+}
+
 type loginResponse struct {
 	Token string
 }
@@ -44,16 +48,24 @@ func (s *Server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	token, err := s.authService.Login(user)
 
+	w.Header().Set("Content-Type", "application/json")
+
 	if errors.Is(err, auth.InvalidLoginError) {
-		http.Error(w, "Invalid username or password", http.StatusBadRequest)
+		res, _ := json.Marshal(ErrorResponse{
+			Err: "Invalid username or password",
+		})
+		http.Error(w, string(res), http.StatusBadRequest)
 		return
 	}
 
 	if err != nil {
-		http.Error(w, "Unexpected error", http.StatusInternalServerError)
+		res, _ := json.Marshal(ErrorResponse{
+			Err: fmt.Sprintf("Unexpected error: %s", err.Error()),
+		})
+
+		http.Error(w, string(res), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
