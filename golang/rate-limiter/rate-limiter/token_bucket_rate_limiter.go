@@ -3,6 +3,7 @@ package rateLimiter
 import (
 	"log"
 	"rate-limiter/m/v2/utils"
+	"sync"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type TokenBucketRateLimiter struct {
 	maxAllowedRequestsPerMinute uint
 	buckets                     map[string]BucketData
 	timeSource                  utils.TimeSource
+	mutex                       *sync.RWMutex
 }
 
 func NewTokenBucketRateLimiter(maxAllowedRequestsPerMinute uint, timeSource utils.TimeSource) *TokenBucketRateLimiter {
@@ -22,10 +24,16 @@ func NewTokenBucketRateLimiter(maxAllowedRequestsPerMinute uint, timeSource util
 		maxAllowedRequestsPerMinute: maxAllowedRequestsPerMinute,
 		buckets:                     make(map[string]BucketData),
 		timeSource:                  timeSource,
+		mutex:                       &sync.RWMutex{},
 	}
 }
 
 func (receiver *TokenBucketRateLimiter) AllowRequest(requestInfo RequestInfo) (bool, error) {
+	// FIXME: use a separate mutex for each bucket. Otherwise, the entire system is blocked when checking if a request
+	// should be allowed. Instead, only requests for the same bucket should block
+	defer receiver.mutex.Unlock()
+	receiver.mutex.Lock()
+
 	bucketKey := generateRequestKey(requestInfo)
 	bucketData, exists := receiver.buckets[bucketKey]
 

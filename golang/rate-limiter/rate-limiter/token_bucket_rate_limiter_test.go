@@ -54,10 +54,6 @@ func TestRejection(t *testing.T) {
 	}
 }
 
-func TestConcurrency(t *testing.T) {
-	t.Error("not yet implemented")
-}
-
 func TestBucketTokenRefill_Basic(t *testing.T) {
 	fakeTimer := &utils.FakeTimeSource{
 		FixedTime: time.Unix(0, 0),
@@ -127,5 +123,40 @@ func TestBucketTokenRefill_Overflow(t *testing.T) {
 
 	if numTokens := limiter.getNumberOfTokensRemaining(request); numTokens != expectedNumTokens {
 		t.Errorf("Expected bucket to have %d tokens. Got %d\n", expectedNumTokens, numTokens)
+	}
+}
+
+func TestConcurrency(t *testing.T) {
+	fakeTimer := &utils.FakeTimeSource{
+		FixedTime: time.Unix(0, 0),
+	}
+
+	maxAllowedRequestsPerMinute := uint(1000)
+	numGoRoutinesDone := uint(0)
+	limiter := NewTokenBucketRateLimiter(maxAllowedRequestsPerMinute, fakeTimer)
+	request := RequestInfo{
+		IPAddress: "test_ip",
+		Endpoint:  "/test_endpoint",
+	}
+
+	for range maxAllowedRequestsPerMinute {
+		go func() {
+			_, err := limiter.AllowRequest(request)
+			if err != nil {
+				t.Fatal("A request was rejected")
+			}
+			numGoRoutinesDone += 1
+		}()
+	}
+
+	for numGoRoutinesDone < maxAllowedRequestsPerMinute {
+		t.Logf("Waiting for %d goroutines to complete...", maxAllowedRequestsPerMinute-numGoRoutinesDone)
+		time.Sleep(1 * time.Millisecond)
+	}
+	t.Log("All go routines completed!")
+
+	numRemainingTokens := limiter.getNumberOfTokensRemaining(request)
+	if numRemainingTokens != 0 {
+		t.Fatalf("Expected 0 tokens to be left in the bucket. Got %d\n", numRemainingTokens)
 	}
 }
