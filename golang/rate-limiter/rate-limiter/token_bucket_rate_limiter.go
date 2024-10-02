@@ -10,11 +10,12 @@ import (
 type BucketData struct {
 	previousTokenGrantTime time.Time
 	numTokens              uint
+	mutex                  *sync.Mutex
 }
 
 type TokenBucketRateLimiter struct {
 	maxAllowedRequestsPerMinute uint
-	buckets                     map[string]BucketData
+	buckets                     map[string]*BucketData
 	timeSource                  utils.TimeSource
 	mutex                       *sync.RWMutex
 }
@@ -22,29 +23,32 @@ type TokenBucketRateLimiter struct {
 func NewTokenBucketRateLimiter(maxAllowedRequestsPerMinute uint, timeSource utils.TimeSource) *TokenBucketRateLimiter {
 	return &TokenBucketRateLimiter{
 		maxAllowedRequestsPerMinute: maxAllowedRequestsPerMinute,
-		buckets:                     make(map[string]BucketData),
+		buckets:                     make(map[string]*BucketData),
 		timeSource:                  timeSource,
 		mutex:                       &sync.RWMutex{},
 	}
 }
 
 func (receiver *TokenBucketRateLimiter) AllowRequest(requestInfo RequestInfo) (bool, error) {
-	// FIXME: use a separate mutex for each bucket. Otherwise, the entire system is blocked when checking if a request
-	// should be allowed. Instead, only requests for the same bucket should block
-	defer receiver.mutex.Unlock()
 	receiver.mutex.Lock()
 
 	bucketKey := generateRequestKey(requestInfo)
 	bucketData, exists := receiver.buckets[bucketKey]
 
 	if !exists {
-		bucketData = BucketData{
+		bucketData = &BucketData{
 			numTokens:              receiver.maxAllowedRequestsPerMinute,
 			previousTokenGrantTime: receiver.timeSource.Now(),
+			mutex:                  &sync.Mutex{},
 		}
-
-		receiver.buckets[bucketKey] = bucketData
 	}
+
+	receiver.buckets[bucketKey] = bucketData
+
+	receiver.mutex.Unlock()
+
+	bucketData.mutex.Lock()
+	defer bucketData.mutex.Unlock()
 
 	secondsSincePreviousTokenGrant := uint(receiver.timeSource.Now().Sub(bucketData.previousTokenGrantTime).Seconds())
 	numTokensToGrant := uint((float64(secondsSincePreviousTokenGrant) / float64(60)) * float64(receiver.maxAllowedRequestsPerMinute))
@@ -61,7 +65,6 @@ func (receiver *TokenBucketRateLimiter) AllowRequest(requestInfo RequestInfo) (b
 	}
 
 	bucketData.numTokens -= 1
-	receiver.buckets[bucketKey] = bucketData
 
 	return true, nil
 }

@@ -2,6 +2,7 @@ package rateLimiter
 
 import (
 	"rate-limiter/m/v2/utils"
+	"sync"
 	"testing"
 	"time"
 )
@@ -131,28 +132,38 @@ func TestConcurrency(t *testing.T) {
 		FixedTime: time.Unix(0, 0),
 	}
 
-	maxAllowedRequestsPerMinute := uint(1000)
+	maxAllowedRequestsPerMinute := uint(10000000)
 	numGoRoutinesDone := uint(0)
 	limiter := NewTokenBucketRateLimiter(maxAllowedRequestsPerMinute, fakeTimer)
 	request := RequestInfo{
 		IPAddress: "test_ip",
 		Endpoint:  "/test_endpoint",
 	}
+	mutex := sync.Mutex{}
 
+	start := time.Now()
 	for range maxAllowedRequestsPerMinute {
 		go func() {
 			_, err := limiter.AllowRequest(request)
 			if err != nil {
 				t.Fatal("A request was rejected")
 			}
+			mutex.Lock()
 			numGoRoutinesDone += 1
+			mutex.Unlock()
 		}()
 	}
 
-	for numGoRoutinesDone < maxAllowedRequestsPerMinute {
+	// FIXME: use WaitGroup to know when all goroutines are completed
+	for waitTime := 1 * time.Millisecond; numGoRoutinesDone < maxAllowedRequestsPerMinute; waitTime += 5 {
 		t.Logf("Waiting for %d goroutines to complete...", maxAllowedRequestsPerMinute-numGoRoutinesDone)
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(waitTime)
 	}
+
+	duration := time.Now().Sub(start).Milliseconds()
+
+	t.Logf("Ran %d goroutines in %dms\n", maxAllowedRequestsPerMinute, duration)
+
 	t.Log("All go routines completed!")
 
 	numRemainingTokens := limiter.getNumberOfTokensRemaining(request)
